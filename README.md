@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HackerRank Orchestrate
 
 Starter repository for the **HackerRank Orchestrate** 24-hour hackathon (September 2026).
@@ -191,3 +192,6 @@ Before submitting, confirm:
 - Every `amount_safe_to_pay` satisfies `0 <= amount_safe_to_pay <= requested_amount`.
 - Every installment plan matches a supplied payment option, and every spending change targets a flexible recurring expense.
 - Your runnable code, setup instructions, and `evaluation/` folder are included in `code.zip`.
+=======
+"# hacker_rank_sep" 
+>>>>>>> 6d3e43efb55841318e6be3a21b1b828ed7a8bb82
