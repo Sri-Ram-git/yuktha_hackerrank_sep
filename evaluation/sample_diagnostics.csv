@@ -1,26 +1,26 @@
 request_id,amount_safe_to_pay,affordability_status,recommended_payment_method,payment_plan,earliest_date_for_full_payment,spending_changes_needed
-request_01,expected=25256 | got=23896.78,expected=affordable_now | got=affordable_with_plan,MATCH,MATCH,expected=2024-03-03 | got=,expected=none | got=reduce_to:event_91:489.5
+request_01,MATCH,MATCH,MATCH,MATCH,MATCH,MATCH
 request_02,expected=17229139.2 | got=21248920.54,MATCH,MATCH,MATCH,expected=2025-09-15 | got=2025-08-15,MATCH
-request_03,expected=873000 | got=1280583.53,MATCH,MATCH,expected=2019-11-15:5491000 | got=2019-10-15:5491000,expected=2019-11-15 | got=2019-10-15,MATCH
+request_03,expected=873000 | got=1464857.55,MATCH,MATCH,expected=2019-11-15:5491000 | got=2019-10-30:5491000,expected=2019-11-15 | got=2019-10-30,MATCH
 request_04,expected=8401800 | got=12693000,expected=affordable_later | got=affordable_now,expected=wait | got=full_payment,expected=2024-06-15:12693000 | got=2024-06-04:12693000,expected=2024-06-15 | got=2024-06-04,MATCH
-request_05,expected=737 | got=7006.21,MATCH,MATCH,MATCH,MATCH,MATCH
+request_05,expected=737 | got=15488,expected=not_affordable | got=affordable_now,expected=not_recommended | got=full_payment,expected=none | got=2025-11-06:15488,expected= | got=2025-11-06,MATCH
 request_06,expected=603.3 | got=620.4,expected=affordable_with_plan | got=affordable_now,MATCH,expected=2026-01-03:620.40 | got=2026-01-03:620.4,expected=2026-01-15 | got=2026-01-03,expected=stop:event_476 | got=none
 request_07,expected=87170.56 | got=101903.15,MATCH,MATCH,MATCH,MATCH,MATCH
-request_08,expected=284.57 | got=383.59,MATCH,MATCH,expected=2025-04-15:996.60 | got=2025-03-15:996.6,expected=2025-04-15 | got=2025-03-15,MATCH
+request_08,expected=284.57 | got=432.57,MATCH,MATCH,expected=2025-04-15:996.60 | got=2025-02-15:996.6,expected=2025-04-15 | got=2025-02-15,MATCH
 request_09,MATCH,MATCH,MATCH,MATCH,MATCH,MATCH
-request_10,expected=12700 | got=189248.98,MATCH,MATCH,MATCH,MATCH,MATCH
+request_10,expected=12700 | got=235476.61,MATCH,MATCH,MATCH,MATCH,MATCH
 request_11,expected=12510645 | got=13110000,expected=affordable_with_plan | got=affordable_now,MATCH,MATCH,expected=2025-07-15 | got=2025-05-03,expected=reduce_to:event_989:665950 | got=none
 request_12,MATCH,MATCH,MATCH,MATCH,MATCH,MATCH
 request_13,expected=433.4 | got=941.6,expected=affordable_later | got=affordable_now,expected=wait | got=full_payment,expected=2024-05-15:941.60 | got=2024-03-07:941.6,expected=2024-05-15 | got=2024-03-07,MATCH
-request_14,expected=597.74 | got=0,MATCH,MATCH,MATCH,MATCH,MATCH
-request_15,expected=83.05 | got=0,MATCH,MATCH,MATCH,MATCH,MATCH
+request_14,expected=597.74 | got=890.49,MATCH,MATCH,MATCH,expected= | got=2025-10-15,MATCH
+request_15,expected=83.05 | got=225.66,MATCH,MATCH,MATCH,MATCH,MATCH
 request_16,MATCH,MATCH,MATCH,MATCH,MATCH,MATCH
 request_17,expected=243849.58 | got=274600,MATCH,MATCH,MATCH,expected=2026-03-15 | got=2026-03-01,MATCH
 request_18,expected=462 | got=662.19,MATCH,MATCH,expected=2026-09-15:3246.10 | got=2026-08-15:3246.1,expected=2026-09-15 | got=2026-08-15,MATCH
-request_19,expected=28820 | got=36581.35,MATCH,MATCH,expected=2024-09-04:28820|2024-09-15:10840 | got=2024-09-04:36581.35|2024-09-15:3078.65,MATCH,MATCH
-request_20,expected=5400 | got=14896,MATCH,MATCH,MATCH,MATCH,MATCH
+request_19,expected=28820 | got=39660,MATCH,expected=partial_payment | got=installments,expected=2024-09-04:28820|2024-09-15:10840 | got=2024-09-04:20623.2|2024-10-02:20623.2,expected=2024-09-15 | got=2024-09-04,MATCH
+request_20,expected=5400 | got=17175.67,MATCH,MATCH,MATCH,MATCH,MATCH
 request_21,expected=1543.35 | got=1574.4,expected=affordable_with_plan | got=affordable_now,MATCH,expected=2026-04-03:1574.40 | got=2026-04-03:1574.4,expected=2026-04-15 | got=2026-04-03,expected=stop:event_1815|reduce_to:event_1816:23.50 | got=none
 request_22,expected=475.46 | got=527.73,MATCH,MATCH,MATCH,expected=2025-01-15 | got=2024-12-15,MATCH
-request_23,expected=9152 | got=11504.89,MATCH,MATCH,expected=2025-07-15:38016 | got=2025-06-15:38016,expected=2025-07-15 | got=2025-06-15,MATCH
-request_24,expected=13420 | got=22371.41,MATCH,MATCH,MATCH,MATCH,MATCH
-request_25,expected=1425000 | got=5678194.79,MATCH,MATCH,MATCH,expected= | got=2024-05-15,MATCH
+request_23,expected=9152 | got=12901.22,MATCH,MATCH,expected=2025-07-15:38016 | got=2025-06-15:38016,expected=2025-07-15 | got=2025-06-15,MATCH
+request_24,expected=13420 | got=24659.5,MATCH,MATCH,MATCH,expected= | got=2026-03-15,MATCH
+request_25,expected=1425000 | got=5678194.79,expected=not_affordable | got=affordable_later,expected=not_recommended | got=wait,expected=none | got=2024-04-15:60496000,expected= | got=2024-04-15,MATCH

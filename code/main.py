@@ -107,41 +107,43 @@ class Engine:
         """Return conservative recurring event templates supported by >=2 observations."""
         evs = self.by_user[user]
         groups = defaultdict(list)
+        salary_group = []
+        income_exclusions = ("commission", "bonus", "app", "platform", "marketplace", "freelance", "contract", "final", "prorated", "refund", "prize")
         for e in evs:
             if e["date"] >= request_date or e["status"] not in ("settled", "scheduled"): continue
             if e["event_type"] in ("investment_valuation", "investment_purchase", "investment_sale", "refund"): continue
             if e["direction"] not in ("credit", "debit") or not e["amount"]: continue
-            groups[(e["description"], e["direction"], e["category"], e["event_type"])].append(e)
+            if e["direction"] == "credit" and e["category"] == "salary":
+                description_l = e["description"].lower()
+                if any(w in description_l for w in ("salary", "payroll", "wage")) and not any(w in description_l for w in income_exclusions):
+                    salary_group.append(e)
+            else:
+                groups[(e["description"], e["direction"], e["category"], e["event_type"])].append(e)
         ans = []
+        if salary_group:
+            salary_group.sort(key=lambda x: x["date"])
+            last = salary_group[-1]
+            amount = self.convert(last, home)
+            last_date = last["date"]
+            next_date = add_months(last_date)
+            ans.append({
+                "event_id": last["event_id"], "description": last["description"], "direction": "credit",
+                "category": "salary", "event_type": "income", "amount": amount,
+                "gap": 30, "monthly": True, "next": next_date,
+                "flexibility": last["flexibility"], "minimum": num(last["minimum_allowed_amount"])
+            })
         structural = {"rent", "utilities", "debt_repayment", "insurance", "education", "housing", "family_support", "healthcare"}
         variable = {"groceries", "dining", "shopping", "transport", "entertainment"}
-        income_exclusions = ("commission", "bonus", "app", "platform", "marketplace", "freelance", "contract", "final", "prorated", "refund", "prize")
         for key, xs in groups.items():
             if len(xs) < 2: continue
             xs.sort(key=lambda x:x["date"])
             gaps = [(b["date"]-a["date"]).days for a,b in zip(xs, xs[1:])]
             gap = int(median(gaps)) if gaps else 0
-            # weekly or monthly cadence only; tolerate month length and sparse histories.
-            # A pair is enough to establish a monthly bill, while noisier
-            # weekly spending needs three observations before it is forecast.
-            if not (25 <= gap <= 35 or (5 <= gap <= 9 and len(xs) >= 3)): continue
             description, direction, category, event_type = key
-            description_l = description.lower()
-            # Historical variable purchases are evidence of past consumption,
-            # not a new fixed obligation.  A subscription/contractual category
-            # is structurally recurring; other variable categories need an
-            # explicit scheduled/pending future row instead.
             if direction == "debit" and category in variable and event_type != "subscription":
-                continue
-            if direction == "debit" and category not in structural and event_type not in {"subscription", "debt_payment"}:
-                continue
-            # Only named base-pay payroll is recurring income.  This excludes
-            # commissions, bonuses, platform/app payouts, final settlements,
-            # and refunds even where old dates happen to repeat.
-            if direction == "credit":
-                if category != "salary" or not any(w in description_l for w in ("salary", "payroll", "wage")) or any(w in description_l for w in income_exclusions):
-                    continue
-                if len(xs) < 3: continue
+                if not (25 <= gap <= 35): continue
+            else:
+                if not (25 <= gap <= 35 or (5 <= gap <= 9 and len(xs) >= 3)): continue
             vals = [self.convert(x, home) for x in xs[-4:]]
             amount = max(vals) if key[1] == "debit" else vals[-1]
             ans.append({"event_id": xs[-1]["event_id"], "description": key[0], "direction": key[1],
@@ -215,14 +217,26 @@ class Engine:
 
     def change_sets(self, user, request_date):
         p = self.profiles[user]; reduce = parts(p["expense_categories_user_is_willing_to_reduce"]); stop = parts(p["expense_categories_user_is_willing_to_stop"])
-        candidates=[]
-        for pat in self.patterns(user, request_date, p["home_currency"]):
+        candidates = []
+        seen = set()
+        events_to_check = list(self.patterns(user, request_date, p["home_currency"]))
+        for e in self.by_user[user]:
+            if e["direction"] == "debit" and e["flexibility"] in {"stoppable", "reducible", "reducible_or_stoppable"}:
+                events_to_check.append({
+                    "event_id": e["event_id"], "description": e["description"], "direction": "debit",
+                    "category": e["category"], "event_type": e["event_type"],
+                    "amount": self.convert(e, p["home_currency"]),
+                    "flexibility": e["flexibility"], "minimum": num(e["minimum_allowed_amount"])
+                })
+        for pat in events_to_check:
+            if pat["event_id"] in seen: continue
+            seen.add(pat["event_id"])
             if pat["direction"] != "debit" or pat["flexibility"] not in {"stoppable", "reducible", "reducible_or_stoppable"}: continue
             if pat["category"] in stop and pat["flexibility"] in {"stoppable", "reducible_or_stoppable"}: candidates.append((pat["event_id"], "stop", 0.0))
             if pat["category"] in reduce and pat["flexibility"] in {"reducible", "reducible_or_stoppable"} and pat["minimum"] < pat["amount"]: candidates.append((pat["event_id"], "reduce", pat["minimum"]))
-        result=[]
-        for n in range(1, min(3,len(candidates))+1):
-            for combo in itertools.combinations(candidates,n):
+        result = []
+        for n in range(1, min(3, len(candidates)) + 1):
+            for combo in itertools.combinations(candidates, n):
                 if len({x[0] for x in combo}) == n: result.append(combo)
         return result
 

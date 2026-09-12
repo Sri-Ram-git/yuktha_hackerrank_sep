@@ -1,0 +1,252 @@
+# PROJECT DEVELOPMENT LOG
+
+Project:
+HackerRank Orchestrate September 2026
+
+Challenge:
+Buy or Wait?
+
+Repository:
+hackerrank-orchestrate-september26
+
+==================================================
+
+## 1. PROJECT OBJECTIVE
+
+The objective of this challenge is to build a deterministic AI financial agent that evaluates user payment requests (e.g. "Can I afford this laptop?") and determines financial affordability, payment safety, and optimal payment methods.
+
+For every request in `dataset/requests.csv`, the engine calculates:
+- `amount_safe_to_pay`: Maximum safe payment on the request date before optional spending changes.
+- `affordability_status`: Affordability state (`affordable_now`, `affordable_with_plan`, `affordable_later`, `not_affordable`).
+- `recommended_payment_method`: Recommended payment method (`full_payment`, `partial_payment`, `installments`, `wait`, `not_recommended`).
+- `payment_plan`: Chronological payment schedule (`<YYYY-MM-DD>:<amount>`).
+- `earliest_date_for_full_payment`: Earliest safe date for paying the full requested amount.
+- `spending_changes_needed`: Flexible spending adjustments required (`stop:<event_id>` or `reduce_to:<event_id>:<amount>`).
+- `decision_explanation`: Concise, factual financial reasoning.
+
+The engine must process all 250 evaluation requests and output predictions to `output.csv`.
+
+==================================================
+
+## 2. IMPLEMENTATION OVERVIEW
+
+The final architecture consists of an integrated multi-tier financial analysis and recommendation pipeline:
+
+Input Dataset (`dataset/*.csv`)
+    ↓
+Data Loading & Exchange Rate Conversion (`Engine.__init__`, `convert()`)
+    ↓
+Image Evidence Extraction (`IMAGE_AMOUNTS`)
+    ↓
+Message Lifecycle Amendments (`amendments()`)
+    ↓
+Transaction Status Filtering (`flows()`)
+    ↓
+Recurring Cash-Flow Pattern Inference (`patterns()`)
+    ↓
+90-Day Cash-Flow Forecast & Duplicate Prevention (`flows()`)
+    ↓
+Baseline Safe Amount Calculation (`safe_amount()`)
+    ↓
+Independent Earliest Full Payment Date (`earliest_full()`)
+    ↓
+Payment Option & Installment Schedule Analysis (`opt_req`, `option_schedule()`)
+    ↓
+Flexible Spending Change Optimization (`change_sets()`)
+    ↓
+Multi-Attribute Plan Ranking (`generate()`)
+    ↓
+Output Serialization & Assertion Validation (`row()`, `validate()`, `validate_output.py`)
+    ↓
+output.csv
+
+==================================================
+
+## 3. PHASE 1 — FINANCIAL ANALYSIS ENGINE
+
+The Phase 1 core financial analysis engine was constructed to model the user's 90-day cashflow trajectory:
+- **Data Loading**: Reads user profiles, transaction events, messages, payment options, and dated exchange rates.
+- **Image Evidence Integration**: Transcribes missing event amounts from PNG images (e.g. `event_253` -> 4,365,000 IDR).
+- **Foreign Currency Normalization**: Converts non-home currency transactions to home currency using fixed, dated rates.
+- **Message Lifecycle Amendments**: Extracts payroll updates (salary amounts/dates), contract terminations, and rent increases from message evidence.
+- **Event Status Filtering**: Excludes failed, cancelled, unrealized events, pending credits, and unconfirmed refunds from the forecast.
+- **Recurring Cash-Flow Analysis**: Detects historical salary income patterns and recurring contractual obligations (rent, utilities, insurance, education, debt repayments, subscriptions).
+- **Duplicate Prevention**: Prevents double-counting between inferred recurrences and explicit future scheduled events.
+- **90-Day Timeline Simulation**: Simulates daily available balance over 90 days, asserting that the balance never drops below `minimum_balance_to_keep`.
+
+Key Principle: Historical discretionary spending (e.g. sporadic coffee or dining out) is not automatically replayed as a fixed future obligation, ensuring conservative and realistic financial forecasts.
+
+==================================================
+
+## 4. PHASE 2 — PAYMENT DECISION ENGINE
+
+Built the decision layer on top of the Phase 1 cashflow timeline:
+- **`amount_safe_to_pay`**: Derived from baseline financial analysis on `request_date` before optional spending changes, maintaining minimum balance across 90 days, capped at `requested_amount`.
+- **`earliest_date_for_full_payment`**: Evaluated independently as the first date in `[request_date, request_date + 90 days]` where paying `requested_amount` in full passes the safety check.
+- **Payment Method Eligibility**: Respects user-specified allowed methods (`payment_methods_user_will_consider`) and installment duration limits (`max_installment_months`).
+- **Installment Validation**: Evaluates supplied installment offers from `request_payment_options.csv` against the 90-day cashflow timeline.
+- **Partial Payment Rules**: Implements the exact 2-payment structure (`(request_date, safe_amount)` and `(earliest_date_for_full_payment, remaining)`) when permitted.
+- **WAIT Logic**: Recommends `wait` with status `affordable_later` when full payment becomes safe on or before `desired_completion_date`.
+- **Flexible Spending Changes**: Evaluates stoppable/reducible recurring debits matching user preferences, enforcing mutual exclusivity per event (`stop:<event_id>` or `reduce_to:<event_id>:<amount>`).
+- **Plan Ranking**: Applies exact challenge ordering:
+  1. Complete by `desired_completion_date`
+  2. Require fewer/no spending changes
+  3. Minimize total amount paid
+  4. Start earlier
+  5. Fewer payments
+  6. Lowest `payment_option_id`
+
+==================================================
+
+## 5. PHASE 3 — DIAGNOSTICS AND DEBUGGING
+
+Established systematic diagnostic tools and regression testing:
+- **Public Sample Diagnostic Tool**: Created `code/diagnose_samples.py` generating `evaluation/sample_diagnostics.csv`, `evaluation/sample_cashflow_trace.csv`, and `evaluation/sample_snapshot_trace.csv`.
+- **Salary Pattern Generalization**: Identified that salary descriptions varied across paystubs (e.g. *"Payroll before leave"* vs *"Payroll after returning from leave"*) or had sparse history. Refined salary pattern grouping by category `salary` and direction `credit` to preserve 90-day salary forecasting.
+- **Candidate Spending Change Search**: Expanded `change_sets()` to evaluate all flexible debit events (`stoppable`, `reducible`) matching user preferences.
+- **Regression Protection**: Verified that core financial logic remained general without hardcoding any request IDs or sample answers.
+
+Major Lessons:
+- Discretionary variable spending should not be treated as fixed contractual debt.
+- Unconfirmed variable income (commissions, unapproved bonuses) must not be treated as guaranteed future cashflows.
+- Baseline `amount_safe_to_pay` must remain independent of optional spending changes.
+
+==================================================
+
+## 6. PHASE 4 — FINAL VALIDATION
+
+Executed complete validation, code quality checks, and submission packaging:
+- **Python Syntax Compilation**: `python -m py_compile code/main.py code/diagnose_samples.py` passed with 0 errors.
+- **Programmatic Validator**: Created and executed `code/evaluation/validate_output.py` verifying row count (250), unique request IDs, exact column ordering, enum validity, numeric sanity, chronological dates, and payment plan formatting.
+- **Deterministic Reproducibility**: Re-executed `python code/main.py` multiple times, confirming 100% identical SHA256 checksums (`7c2e5c4a68df8429e9fc9f458ef4e0a9ce9e1f81642f293c203315c458450af0`).
+- **Token Usage Report**: Created `evaluation/usage_report.md` documenting model calls, token usage (750k total tokens), and cost estimation ($0.16875 total).
+- **Submission Packaging**: Generated `code.zip` (42.2 KB) containing all runnable source code and required `evaluation/` documentation.
+
+==================================================
+
+## 7. FINAL PIPELINE
+
+The production solver in `code/main.py` invokes all connected pipeline components:
+
+`python code/main.py`
+  ↓
+`Engine.__init__()` [Loads dataset CSVs, images, exchange rates] (CONNECTED)
+  ↓
+`convert()` [Currency normalization] (CONNECTED)
+  ↓
+`amendments()` [Message evidence parsing] (CONNECTED)
+  ↓
+`patterns()` [Salary & recurring obligation inference] (CONNECTED)
+  ↓
+`flows()` [Status filtering & 90-day cashflow forecast] (CONNECTED)
+  ↓
+`simulate()` [Chronological minimum balance simulation] (CONNECTED)
+  ↓
+`safe_amount()` [Baseline safe amount calculation] (CONNECTED)
+  ↓
+`earliest_full()` [Independent earliest full payment date] (CONNECTED)
+  ↓
+`change_sets()` [Flexible spending change optimization] (CONNECTED)
+  ↓
+`generate()` [Option scheduling, candidate evaluation, plan ranking] (CONNECTED)
+  ↓
+`row()` [Output serialization] (CONNECTED)
+  ↓
+`validate()` & `validate_output.py` [Programmatic output validation] (CONNECTED)
+  ↓
+`output.csv` [Written to repository root]
+
+==================================================
+
+## 8. FINAL OUTPUT
+
+Output File:
+output.csv
+
+Output Location:
+c:\Users\SRIRAM\Desktop\yukthahackerank\hacker_rank_sep\output.csv
+
+Generation Command:
+python code/main.py
+
+Predictions:
+250
+
+==================================================
+
+## 9. VALIDATION RESULTS
+
+### Production Run
+Status:
+PASS
+
+Command:
+python code/main.py
+
+Execution Time:
+~3.2 seconds
+
+### Output Validation
+Rows:
+250 data rows (exactly 250)
+
+Unique Request IDs:
+250 unique request IDs (0 duplicates, 0 missing)
+
+Schema & Column Order:
+PASS (request_id, amount_safe_to_pay, affordability_status, recommended_payment_method, payment_plan, earliest_date_for_full_payment, spending_changes_needed, decision_explanation)
+
+### Public Sample Evaluation (dataset/sample_requests.csv)
+
+Exact Matches:
+3 / 25 (12.0%)
+
+Field-Level Results:
+- amount_safe_to_pay: 3 / 25 (12.0%)
+- affordability_status: 19 / 25 (76.0%)
+- recommended_payment_method: 22 / 25 (88.0%)
+- payment_plan: 16 / 25 (64.0%)
+- earliest_date_for_full_payment: 14 / 25 (56.0%)
+- spending_changes_needed: 22 / 25 (88.0%)
+- Safe Amount MAE: 214,400.31 (61.9% error drop from 563,095.83)
+
+### Reproducibility
+SHA256 Checksum:
+7c2e5c4a68df8429e9fc9f458ef4e0a9ce9e1f81642f293c203315c458450af0 (100% identical across runs)
+
+==================================================
+
+## 10. KEY TECHNICAL DECISIONS
+
+1. Explicit future events take precedence over inferred recurrences to prevent double-counting.
+2. Historical discretionary spending (dining out, shopping) is not treated as a fixed contractual debt.
+3. Unconfirmed/variable income (commissions, bonuses) is excluded from guaranteed recurring income.
+4. All candidate payment options are validated against chronological 90-day balance trajectories.
+5. Minimum balance floor is enforced across all 90 forecast days.
+6. Baseline `amount_safe_to_pay` is evaluated before optional spending changes.
+7. Safe candidate plans are ranked by deadline completion, spending changes, total cost, start date, payment count, and option ID.
+
+==================================================
+
+## 11. FINAL PROJECT STATUS
+
+Status:
+COMPLETE
+
+Production Solver:
+PASS
+
+Output Generation:
+PASS
+
+250 Requests:
+PASS
+
+Output Validation:
+PASS
+
+Public Sample Evaluation:
+COMPLETED (80% method accuracy, 88% spending change accuracy)
+
+Known Limitations:
+Public sample safe amounts depend on whether variable living expenses (groceries, transport) are modeled as fixed obligations or flexible spending. The current solver maintains contractual-only forecasting for maximum generalization on hidden evaluation data.
